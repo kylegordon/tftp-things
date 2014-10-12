@@ -1,0 +1,209 @@
+#!ipxe
+
+######## MAIN MENU ###################
+:start
+menu Welcome to iPXE's Boot Menu
+#item
+#item smartos                Boot SmartOS
+item debian32-stable-nogui  Install Debian x86 Stable without GUI
+item debian32-testing-nogui Install Debian x86 Testing without GUI
+item debian64-stable-nogui  Install Debian x64 Stable without GUI
+item debian64-testing-nogui Install Debian x64 Testing without GUI
+item debian64-preseeded	    Install preseeded Debian x64
+item
+item iso
+item
+item centos64   	    Install CentOS x64
+item centos32               Install CentOS x86
+item 
+item centos64ks		    Install CentOS x64 Kickstarted
+item centos32ks		    Install CentOS x32 Kickstarted
+item
+item fedorarawhidex64	    Install Fedora Rawhide x64
+item fedora20x64	    Install Fedora 20 x64
+item
+item ubuntu1404x64	    Install Ubuntu 14.04 x64
+item ubuntu1404x64ks        Install Ubuntu 14.04 x64 Kickstarted
+item
+item gparted		    GParted Disk Editor
+item clonezilla		    Clonezilla Disk Duplication
+item dban	            DBAN Normally
+item zero	            DBAN Quickly
+item memtest		    Memory Test
+item windows 		    Windows
+item pxegrub	            PXE GRUB Instance
+item shell                  Enter iPXE shell
+item reboot                 Reboot
+item
+item exit                   Exit (boot local disk)
+
+# From http://forum.ipxe.org/showthread.php?tid=6886
+# and https://gist.github.com/robinsmidsrod/3871687
+# and http://ipxe.org/cmd/iseq
+
+#iseq ${net0/mac:hex} 00:1e:4f:52:49:d0 && goto gparted ||
+#iseq ${net0/mac} 00:1e:4f:52:49:d0 && goto gparted ||
+#iseq ${net0/mac:hex} 00:1e:4f:52:14:16 && goto gparted ||
+
+#choose --default smartos --timeout 60000 target && goto ${target}
+## Default to the exit option, to resume boot from local disk
+choose --default exit --timeout 10000 target && goto ${target}
+
+## Utility menu items:
+:shell
+echo Type exit to get the back to the menu
+shell
+set menu-timeout 0
+goto start
+
+:failed
+echo Booting failed, dropping to shell
+goto shell
+
+:reboot
+reboot
+
+:exit
+exit
+
+########## MENU ITEMS #######################
+:windows
+kernel http://core.vpn.glasgownet.com/memdisk
+initrd http://homeauto.vpn.glasgownet.com/Software/Microsoft/SW_DVD5_Win_Pro_7w_SP1_64BIT_English_-2_MLF_X17-59279.ISO
+append raw iso
+boot
+
+:sdc
+kernel /sdc/20121001T165806Z/platform/i86pc/kernel/amd64/unix -B hostname=r720test,standalone=true
+initrd /sdc/20121001T165806Z/platform/i86pc/amd64/boot_archive
+boot
+
+:smartos
+kernel /smartos/20121004T212912Z/platform/i86pc/kernel/amd64/unix
+initrd /smartos/20121004T212912Z/platform/i86pc/amd64/boot_archive
+boot
+
+:pxegrub
+kernel pxegrub
+boot
+
+:gparted
+kernel http://core.vpn.glasgownet.com/gparted-netboot/live/vmlinuz boot=live union=aufs noswap noprompt vga=788 fetch=http://core.vpn.glasgownet.com/gparted-netboot/live/filesystem.squashfs
+initrd http://core.vpn.glasgownet.com/gparted-netboot/live/initrd.img
+boot
+
+:clonezilla
+echo Starting CloneZilla with default options
+kernel http://core.vpn.glasgownet.com/CloneZilla/vmlinuz
+initrd http://core.vpn.glasgownet.com/CloneZilla/initrd.img
+imgargs vmlinuz boot=live config noswap nolocales edd=on nomodeset ocs_live_run="ocs-live-general" ocs_live_extra_param="" ocs_live_keymap="" ocs_live_batch="no" ocs_daemonon="ssh" usercrypted=Kb/VNchPYhuf6 ocs_lang="" vga=788 nosplash noprompt fetch=http://core.vpn.glasgownet.com/CloneZilla/filesystem.squashfs
+boot || goto failed
+goto start
+
+:fdboot
+kernel memdisk raw
+initrd fdboot.img
+boot
+
+:memtest
+kernel memtest86
+boot
+
+########## DBAN ITEMS ##########
+:zero
+kernel DBAN.BZI nuke="dwipe --autonuke --method zero" silent
+boot
+
+:dban
+kernel DBAN.BZI nuke="dwipe --autonuke" silent
+boot
+
+:iso
+sanboot http://boot.ipxe.org/freedos/fdfullcd.iso
+boot
+
+
+########## DEBIAN ITEMS ##########
+:debian32-stable-nogui
+kernel http://ftp.debian.org/debian/dists/stable/main/installer-i386/current/images/netboot/debian-installer/i386/linux --
+initrd http://ftp.debian.org/debian/dists/stable/main/installer-i386/current/images/netboot/debian-installer/i386/initrd.gz
+boot
+
+:debian32-testing-nogui
+kernel http://d-i.debian.org/daily-images/i386/daily/netboot/debian-installer/i386/linux --
+initrd http://d-i.debian.org/daily-images/i386/daily/netboot/debian-installer/i386/initrd.gz
+boot
+
+:debian64-stable-nogui
+kernel http://ftp.debian.org/debian/dists/stable/main/installer-amd64/current/images/netboot/debian-installer/amd64/linux -- 
+initrd http://ftp.debian.org/debian/dists/stable/main/installer-amd64/current/images/netboot/debian-installer/amd64/initrd.gz
+boot
+
+:debian64-stable-gui
+kernel http://ftp.debian.org/debian/dists/stable/main/installer-amd64/current/images/netboot/gtk/debian-installer/amd64/linux -- 
+initrd http://ftp.debian.org/debian/dists/stable/main/installer-amd64/current/images/netboot/gtk/debian-installer/amd64/initrd.gz
+boot
+
+:debian64-testing-nogui
+kernel http://d-i.debian.org/daily-images/amd64/daily/netboot/debian-installer/amd64/linux --
+initrd http://d-i.debian.org/daily-images/amd64/daily/netboot/debian-installer/amd64/initrd.gz
+boot
+
+:debian64-testing-gui
+kernel http://d-i.debian.org/daily-images/amd64/daily/netboot/gtk/debian-installer/amd64/linux --
+initrd http://d-i.debian.org/daily-images/amd64/daily/netboot/gtk/debian-installer/amd64/initrd.gz
+boot
+
+:debian64-preseeded
+set buildserver 62.50.212.44
+set pxebase http://${buildserver}/ipxe
+set property_code sgcrt
+set property_domain vpn.glasgownet.com
+
+kernel ${pxebase}/linux preseed/url=http://${buildserver}/ipxe/wheezy-kg-preseed.cfg?${mac} debian-installer/locale=en_US.UTF-8 keymap=us netcfg/get_hostname=${property_code} netcfg/get_domain=${property_domain} netcfg/choose_interface=eth0 ipv6.disable=1 --
+initrd ${pxebase}/initrd.gz
+boot
+
+
+:ubuntu1404x64
+kernel http://archive.ubuntu.com/ubuntu/dists/trusty/main/installer-amd64/current/images/netboot/ubuntu-installer/amd64/linux --
+initrd http://archive.ubuntu.com/ubuntu/dists/trusty/main/installer-amd64/current/images/netboot/ubuntu-installer/amd64/initrd.gz
+boot
+
+:ubuntu1404x64ks
+kernel http://archive.ubuntu.com/ubuntu/dists/trusty/main/installer-amd64/current/images/netboot/ubuntu-installer/amd64/linux --
+initrd http://archive.ubuntu.com/ubuntu/dists/trusty/main/installer-amd64/current/images/netboot/ubuntu-installer/amd64/initrd.gz ks=http://172.24.32.1/ks.cfg
+boot
+
+########## CENTOS ITEMS ##########
+:centos64
+kernel http://mirror.centos.org/centos/6/os/x86_64/isolinux/vmlinuz
+initrd http://mirror.centos.org/centos/6/os/x86_64/isolinux/initrd.img
+boot
+
+:centos32
+kernel http://mirror.centos.org/centos/6/os/i386/isolinux/vmlinuz
+initrd http://mirror.centos.org/centos/6/os/i386/isolinux/initrd.img
+boot
+
+:centos64ks
+kernel http://mirror.centos.org/centos/6/os/x86_64/isolinux/vmlinuz ks=http://172.24.32.1/centos.kickstart ksdevice=bootif
+initrd http://mirror.centos.org/centos/6/os/x86_64/isolinux/initrd.img
+boot
+
+:centos32ks
+kernel http://mirror.centos.org/centos/6/os/i386/isolinux/vmlinuz ks=http://172.24.32.1/centos.kickstart ksdevice=bootif 
+initrd http://mirror.centos.org/centos/6/os/i386/isolinux/initrd.img
+boot
+
+########## Fedora Items ###########
+:fedorarawhidex64
+kernel http://dl.fedoraproject.org/pub/fedora/linux/development/rawhide/x86_64/os/isolinux/vmlinuz inst.repo=http://dl.fedoraproject.org/pub/fedora/linux/development
+initrd http://dl.fedoraproject.org/pub/fedora/linux/development/rawhide/x86_64/os/isolinux/initrd.img
+boot
+
+:fedora20x64
+kernel http://dl.fedoraproject.org/pub/fedora/linux/releases/20/Fedora/x86_64/os/isolinux/vmlinuz inst.repo=http://dl.fedoraproject.org/pub/fedora/linux/releases/
+initrd http://dl.fedoraproject.org/pub/fedora/linux/releases/20/Fedora/x86_64/os/isolinux/initrd.img
+boot
+
